@@ -87,6 +87,23 @@ DECLDIR void random_standard_normal_fill_f(bitgen_t *, npy_intp, float *);
 DECLDIR double random_standard_gamma(bitgen_t *bitgen_state, double shape);
 DECLDIR float random_standard_gamma_f(bitgen_t *bitgen_state, float shape);
 
+DECLDIR void random_standard_uniform_fill_avx2(bitgen_t *, npy_intp, double *);
+DECLDIR void random_standard_uniform_fill_avx2_f(bitgen_t *, npy_intp, float *);
+DECLDIR void random_standard_normal_fill_avx2(bitgen_t *, npy_intp, double *);
+DECLDIR void random_standard_normal_fill_avx2_f(bitgen_t *, npy_intp, float *);
+DECLDIR void random_standard_exponential_fill_avx2(bitgen_t *, npy_intp, double *);
+DECLDIR void random_standard_exponential_fill_avx2_f(bitgen_t *, npy_intp, float *);
+DECLDIR void random_standard_gamma_fill_avx2(bitgen_t *, double, npy_intp, double *);
+DECLDIR void random_standard_gamma_fill_avx2_f(bitgen_t *, float, npy_intp, float *);
+
+DECLDIR void random_uniform_fill_avx2(bitgen_t *, double, double, npy_intp, double *);
+DECLDIR void random_normal_fill_avx2(bitgen_t *, double, double, npy_intp, double *);
+DECLDIR void random_exponential_fill_avx2(bitgen_t *, double, npy_intp, double *);
+DECLDIR void random_gamma_fill_avx2(bitgen_t *, double, double, npy_intp, double *);
+
+DECLDIR void random_avx2_reseed(bitgen_t *);
+DECLDIR int random_avx2_available(void);
+
 DECLDIR double random_normal(bitgen_t *bitgen_state, double loc, double scale);
 
 DECLDIR double random_gamma(bitgen_t *bitgen_state, double shape, double scale);

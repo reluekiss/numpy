@@ -18,6 +18,52 @@ npyrandom_lib = static_library('npyrandom',
   name_suffix: name_suffix_staticlib,
 )
 
+# Build AVX2-optimized distributions library
+# ------------------------------------------
+npyrandom_avx2_sources = [
+  'src/distributions/distributions_avx2.c',
+]
+
+# AVX2 compiler flags
+avx2_c_args = []
+if cc.get_id() != 'msvc'
+  if cc.has_argument('-mavx2')
+    avx2_c_args += ['-mavx2']
+  endif
+  if cc.has_argument('-mfma')
+    avx2_c_args += ['-mfma']
+  endif
+else
+  # MSVC uses /arch:AVX2
+  if cc.has_argument('/arch:AVX2')
+    avx2_c_args += ['/arch:AVX2']
+  endif
+endif
+
+# Only build AVX2 library if compiler supports it
+if avx2_c_args.length() > 0
+  npyrandom_avx2_lib = static_library('npyrandom_avx2',
+    npyrandom_avx2_sources,
+    c_args: staticlib_cflags + avx2_c_args,
+    dependencies: [py_dep, np_core_dep],
+    install: true,
+    install_dir: np_dir / 'random/lib',
+    name_prefix: name_prefix_staticlib,
+    name_suffix: name_suffix_staticlib,
+  )
+else
+  # Fallback: build without AVX2 (stubs will be used)
+  npyrandom_avx2_lib = static_library('npyrandom_avx2',
+    npyrandom_avx2_sources,
+    c_args: staticlib_cflags,
+    dependencies: [py_dep, np_core_dep],
+    install: true,
+    install_dir: np_dir / 'random/lib',
+    name_prefix: name_prefix_staticlib,
+    name_suffix: name_suffix_staticlib,
+  )
+endif
+
 # Build Cython extensions for numpy.random
 # ----------------------------------------
 # pyx -> c transpile output depends on copied __init__.py and pxd files
@@ -60,7 +106,7 @@ endif
 # name, sources, extra c_args, extra static libs to link
 random_pyx_sources = [
   ['_bounded_integers', _bounded_integers_pyx, [], [npyrandom_lib, npymath_lib]],
-  ['_common', '_common.pyx', [], [npyrandom_lib]],
+  ['_common', '_common.pyx', [], [npyrandom_lib, npyrandom_avx2_lib]],
   ['_mt19937', ['_mt19937.pyx', 'src/mt19937/mt19937.c', 'src/mt19937/mt19937-jump.c'],
     [], [npyrandom_lib]
   ],
@@ -70,7 +116,7 @@ random_pyx_sources = [
   ['bit_generator', 'bit_generator.pyx', [], [npyrandom_lib]],
   # The `fs.copyfile` usage here is needed because these two .pyx files import
   # from _bounded_integers,and its pxd file is only present in the build directory
-  ['_generator', fs.copyfile('_generator.pyx'), [], [npyrandom_lib, npymath_lib]],
+  ['_generator', fs.copyfile('_generator.pyx'), [], [npyrandom_lib, npyrandom_avx2_lib, npymath_lib]],
   ['mtrand', [
       fs.copyfile('mtrand.pyx'),
       'src/distributions/distributions.c',

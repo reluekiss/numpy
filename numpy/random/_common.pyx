@@ -1082,3 +1082,325 @@ cdef object cont_f(void *func, bitgen_t *state, object size, object lock,
         return randoms
     else:
         return out
+
+
+# ============================================================================
+# AVX2-optimized fill wrappers
+# ============================================================================
+
+from numpy.random.c_distributions cimport (
+    random_standard_uniform_fill_avx2,
+    random_standard_normal_fill_avx2,
+    random_standard_exponential_fill_avx2,
+    random_standard_gamma_fill_avx2,
+    random_uniform_fill_avx2,
+    random_normal_fill_avx2,
+    random_exponential_fill_avx2,
+    random_gamma_fill_avx2,
+    random_standard_uniform_fill_avx2_f,
+    random_standard_normal_fill_avx2_f,
+    random_standard_exponential_fill_avx2_f,
+    random_standard_gamma_fill_avx2_f,
+    random_avx2_available,
+)
+
+# Cache AVX2 availability check
+cdef bint _avx2_available = -1
+
+cdef bint avx2_is_available() noexcept:
+    global _avx2_available
+    if _avx2_available == -1:
+        _avx2_available = random_avx2_available()
+    return _avx2_available
+
+cdef object double_fill_avx2_uniform(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized uniform fill"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_uniform_fill_avx2(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_uniform_fill_avx2(state, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_normal(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized normal fill"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_normal_fill_avx2(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_normal_fill_avx2(state, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_exponential(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized exponential fill"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_exponential_fill_avx2(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_exponential_fill_avx2(state, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_gamma(bitgen_t *state, double shape, object size, object lock, object out):
+    """AVX2-optimized gamma fill"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_gamma_fill_avx2(state, shape, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_gamma_fill_avx2(state, shape, n, out_array_data)
+    return out_array
+
+# Scaled distribution wrappers (double)
+
+cdef object double_fill_avx2_uniform_scaled(bitgen_t *state, double low, double range, object size, object lock, object out):
+    """AVX2-optimized uniform fill with low/range parameters"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_uniform_fill_avx2(state, low, range, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_uniform_fill_avx2(state, low, range, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_normal_scaled(bitgen_t *state, double loc, double scale, object size, object lock, object out):
+    """AVX2-optimized normal fill with loc/scale parameters"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_normal_fill_avx2(state, loc, scale, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_normal_fill_avx2(state, loc, scale, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_exponential_scaled(bitgen_t *state, double scale, object size, object lock, object out):
+    """AVX2-optimized exponential fill with scale parameter"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_exponential_fill_avx2(state, scale, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_exponential_fill_avx2(state, scale, n, out_array_data)
+    return out_array
+
+cdef object double_fill_avx2_gamma_scaled(bitgen_t *state, double shape, double scale, object size, object lock, object out):
+    """AVX2-optimized gamma fill with scale parameter"""
+    cdef double out_val
+    cdef double *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_gamma_fill_avx2(state, shape, scale, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float64, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.double)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <double *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_gamma_fill_avx2(state, shape, scale, n, out_array_data)
+    return out_array
+
+# Float32 wrappers
+
+cdef object float_fill_avx2_uniform(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized uniform fill (float32)"""
+    cdef float out_val
+    cdef float *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_uniform_fill_avx2_f(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float32, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.float32)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <float *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_uniform_fill_avx2_f(state, n, out_array_data)
+    return out_array
+
+cdef object float_fill_avx2_normal(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized normal fill (float32)"""
+    cdef float out_val
+    cdef float *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_normal_fill_avx2_f(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float32, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.float32)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <float *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_normal_fill_avx2_f(state, n, out_array_data)
+    return out_array
+
+cdef object float_fill_avx2_exponential(bitgen_t *state, object size, object lock, object out):
+    """AVX2-optimized exponential fill (float32)"""
+    cdef float out_val
+    cdef float *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_exponential_fill_avx2_f(state, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float32, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.float32)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <float *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_exponential_fill_avx2_f(state, n, out_array_data)
+    return out_array
+
+cdef object float_fill_avx2_gamma(bitgen_t *state, float shape, object size, object lock, object out):
+    """AVX2-optimized gamma fill (float32)"""
+    cdef float out_val
+    cdef float *out_array_data
+    cdef np.ndarray out_array
+    cdef np.npy_intp n
+
+    if size is None and out is None:
+        with lock:
+            random_standard_gamma_fill_avx2_f(state, shape, 1, &out_val)
+            return out_val
+
+    if out is not None:
+        check_output(out, np.float32, size, False)
+        out_array = <np.ndarray>out
+    else:
+        out_array = <np.ndarray>np.empty(size, np.float32)
+
+    n = np.PyArray_SIZE(out_array)
+    out_array_data = <float *>np.PyArray_DATA(out_array)
+    with lock, nogil:
+        random_standard_gamma_fill_avx2_f(state, shape, n, out_array_data)
+    return out_array

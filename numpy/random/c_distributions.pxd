@@ -31,20 +31,37 @@ cdef extern from "numpy/random/distributions.h":
     double random_standard_uniform(bitgen_t *bitgen_state) nogil
     void random_standard_uniform_fill(bitgen_t* bitgen_state, npy_intp cnt, double *out) nogil
     void random_standard_uniform_fill_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
-    
+
     double random_standard_exponential(bitgen_t *bitgen_state) nogil
     float random_standard_exponential_f(bitgen_t *bitgen_state) nogil
     void random_standard_exponential_fill(bitgen_t *bitgen_state, npy_intp cnt, double *out) nogil
     void random_standard_exponential_fill_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
     void random_standard_exponential_inv_fill(bitgen_t *bitgen_state, npy_intp cnt, double *out) nogil
     void random_standard_exponential_inv_fill_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
-    
+
     double random_standard_normal(bitgen_t* bitgen_state) nogil
     float random_standard_normal_f(bitgen_t *bitgen_state) nogil
     void random_standard_normal_fill(bitgen_t *bitgen_state, npy_intp count, double *out) nogil
     void random_standard_normal_fill_f(bitgen_t *bitgen_state, npy_intp count, float *out) nogil
     double random_standard_gamma(bitgen_t *bitgen_state, double shape) nogil
     float random_standard_gamma_f(bitgen_t *bitgen_state, float shape) nogil
+
+    void random_standard_uniform_fill_avx2(bitgen_t *bitgen_state, npy_intp cnt, double *out) nogil
+    void random_standard_uniform_fill_avx2_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
+    void random_standard_normal_fill_avx2(bitgen_t *bitgen_state, npy_intp cnt, double *out) nogil
+    void random_standard_normal_fill_avx2_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
+    void random_standard_exponential_fill_avx2(bitgen_t *bitgen_state, npy_intp cnt, double *out) nogil
+    void random_standard_exponential_fill_avx2_f(bitgen_t *bitgen_state, npy_intp cnt, float *out) nogil
+    void random_standard_gamma_fill_avx2(bitgen_t *bitgen_state, double shape, npy_intp cnt, double *out) nogil
+    void random_standard_gamma_fill_avx2_f(bitgen_t *bitgen_state, float shape, npy_intp cnt, float *out) nogil
+
+    void random_uniform_fill_avx2(bitgen_t *bitgen_state, double low, double range, npy_intp cnt, double *out) nogil
+    void random_normal_fill_avx2(bitgen_t *bitgen_state, double loc, double scale, npy_intp cnt, double *out) nogil
+    void random_exponential_fill_avx2(bitgen_t *bitgen_state, double scale, npy_intp cnt, double *out) nogil
+    void random_gamma_fill_avx2(bitgen_t *bitgen_state, double shape, double scale, npy_intp cnt, double *out) nogil
+
+    void random_avx2_reseed(bitgen_t *bitgen_state) nogil
+    int random_avx2_available() nogil
 
     float random_standard_uniform_f(bitgen_t *bitgen_state) nogil
     void random_standard_uniform_fill_f(bitgen_t* bitgen_state, npy_intp cnt, float *out) nogil

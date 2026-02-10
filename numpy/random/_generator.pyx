@@ -27,7 +27,13 @@ from ._common cimport (POISSON_LAM_MAX, CONS_POSITIVE, CONS_NONE,
             CONS_BOUNDED_LT_0_1, CONS_GT_1, CONS_POSITIVE_NOT_NAN, CONS_POISSON,
             double_fill, cont, kahan_sum, cont_broadcast_3, float_fill, cont_f,
             check_array_constraint, check_constraint, disc, discrete_broadcast_iii,
-            validate_output_shape
+            validate_output_shape,
+            avx2_is_available, double_fill_avx2_uniform, double_fill_avx2_normal,
+            double_fill_avx2_exponential, double_fill_avx2_gamma,
+            double_fill_avx2_uniform_scaled, double_fill_avx2_normal_scaled,
+            double_fill_avx2_exponential_scaled, double_fill_avx2_gamma_scaled,
+            float_fill_avx2_uniform, float_fill_avx2_normal,
+            float_fill_avx2_exponential, float_fill_avx2_gamma
         )
 
 cdef extern from "numpy/arrayobject.h":
@@ -354,8 +360,12 @@ cdef class Generator:
         """
         _dtype = np.dtype(dtype)
         if _dtype == np.float64:
+            if avx2_is_available():
+                return double_fill_avx2_uniform(&self._bitgen, size, self.lock, out)
             return double_fill(&random_standard_uniform_fill, &self._bitgen, size, self.lock, out)
         elif _dtype == np.float32:
+            if avx2_is_available():
+                return float_fill_avx2_uniform(&self._bitgen, size, self.lock, out)
             return float_fill(&random_standard_uniform_fill_f, &self._bitgen, size, self.lock, out)
         else:
             raise TypeError('Unsupported dtype %r for random' % _dtype)
@@ -515,6 +525,13 @@ cdef class Generator:
                https://en.wikipedia.org/wiki/Exponential_distribution
 
         """
+        # Use AVX2 path for scalar scale parameter
+        if avx2_is_available() and np.isscalar(scale):
+            fscale = float(scale)
+            if fscale < 0:
+                raise ValueError('scale < 0')
+            return double_fill_avx2_exponential_scaled(&self._bitgen, fscale, size, self.lock, None)
+
         return cont(&random_exponential, &self._bitgen, size, self.lock, 1,
                     scale, 'scale', CONS_NON_NEGATIVE,
                     0.0, '', CONS_NONE,
@@ -569,11 +586,15 @@ cdef class Generator:
         _dtype = np.dtype(dtype)
         if _dtype == np.float64:
             if method == 'zig':
+                if avx2_is_available():
+                    return double_fill_avx2_exponential(&self._bitgen, size, self.lock, out)
                 return double_fill(&random_standard_exponential_fill, &self._bitgen, size, self.lock, out)
             else:
                 return double_fill(&random_standard_exponential_inv_fill, &self._bitgen, size, self.lock, out)
         elif _dtype == np.float32:
             if method == 'zig':
+                if avx2_is_available():
+                    return float_fill_avx2_exponential(&self._bitgen, size, self.lock, out)
                 return float_fill(&random_standard_exponential_fill_f, &self._bitgen, size, self.lock, out)
             else:
                 return float_fill(&random_standard_exponential_inv_fill_f, &self._bitgen, size, self.lock, out)
@@ -1098,6 +1119,11 @@ cdef class Generator:
             rng = _high - _low
             if not np.isfinite(rng):
                 raise OverflowError('high - low range exceeds valid bounds')
+            if rng < 0:
+                raise ValueError('high - low < 0')
+
+            if avx2_is_available():
+                return double_fill_avx2_uniform_scaled(&self._bitgen, _low, rng, size, self.lock, None)
 
             return cont(&random_uniform, &self._bitgen, size, self.lock, 2,
                         _low, '', CONS_NONE,
@@ -1186,8 +1212,12 @@ cdef class Generator:
         """
         _dtype = np.dtype(dtype)
         if _dtype == np.float64:
+            if avx2_is_available():
+                return double_fill_avx2_normal(&self._bitgen, size, self.lock, out)
             return double_fill(&random_standard_normal_fill, &self._bitgen, size, self.lock, out)
         elif _dtype == np.float32:
+            if avx2_is_available():
+                return float_fill_avx2_normal(&self._bitgen, size, self.lock, out)
             return float_fill(&random_standard_normal_fill_f, &self._bitgen, size, self.lock, out)
         else:
             raise TypeError('Unsupported dtype %r for standard_normal' % _dtype)
@@ -1291,6 +1321,14 @@ cdef class Generator:
                [ 0.39924804,  4.68456316,  4.99394529,  4.84057254]])  # random
 
         """
+        # Use AVX2 path for scalar parameters
+        if avx2_is_available() and np.isscalar(loc) and np.isscalar(scale):
+            floc = float(loc)
+            fscale = float(scale)
+            if fscale < 0:
+                raise ValueError('scale < 0')
+            return double_fill_avx2_normal_scaled(&self._bitgen, floc, fscale, size, self.lock, None)
+
         return cont(&random_normal, &self._bitgen, size, self.lock, 2,
                     loc, '', CONS_NONE,
                     scale, 'scale', CONS_NON_NEGATIVE,
@@ -1376,12 +1414,22 @@ cdef class Generator:
         """
         _dtype = np.dtype(dtype)
         if _dtype == np.float64:
+            # Use AVX2 path for scalar shape parameter
+            if avx2_is_available() and np.isscalar(shape):
+                fshape = float(shape)
+                if fshape >= 0.0:
+                    return double_fill_avx2_gamma(&self._bitgen, fshape, size, self.lock, out)
             return cont(&random_standard_gamma, &self._bitgen, size, self.lock, 1,
                         shape, 'shape', CONS_NON_NEGATIVE,
                         0.0, '', CONS_NONE,
                         0.0, '', CONS_NONE,
                         out)
         if _dtype == np.float32:
+            # Use AVX2 path for scalar shape parameter
+            if avx2_is_available() and np.isscalar(shape):
+                fshape = float(shape)
+                if fshape >= 0.0:
+                    return float_fill_avx2_gamma(&self._bitgen, fshape, size, self.lock, out)
             return cont_f(&random_standard_gamma_f, &self._bitgen, size, self.lock,
                           shape, 'shape', CONS_NON_NEGATIVE,
                           out)
@@ -1462,6 +1510,16 @@ cdef class Generator:
         >>> plt.show()
 
         """
+        # Use AVX2 path for scalar parameters
+        if avx2_is_available() and np.isscalar(shape) and np.isscalar(scale):
+            fshape = float(shape)
+            fscale = float(scale)
+            if fshape < 0:
+                raise ValueError('shape < 0')
+            if fscale < 0:
+                raise ValueError('scale < 0')
+            return double_fill_avx2_gamma_scaled(&self._bitgen, fshape, fscale, size, self.lock, None)
+
         return cont(&random_gamma, &self._bitgen, size, self.lock, 2,
                     shape, 'shape', CONS_NON_NEGATIVE,
                     scale, 'scale', CONS_NON_NEGATIVE,

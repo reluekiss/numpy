@@ -108,3 +108,19 @@ cdef object discrete_broadcast_iii(void *func, void *state, object size, object 
                                    np.ndarray a_arr, object a_name, constraint_type a_constraint,
                                    np.ndarray b_arr, object b_name, constraint_type b_constraint,
                                    np.ndarray c_arr, object c_name, constraint_type c_constraint)
+
+cdef bint avx2_is_available() noexcept
+cdef object double_fill_avx2_uniform(bitgen_t *state, object size, object lock, object out)
+cdef object double_fill_avx2_normal(bitgen_t *state, object size, object lock, object out)
+cdef object double_fill_avx2_exponential(bitgen_t *state, object size, object lock, object out)
+cdef object double_fill_avx2_gamma(bitgen_t *state, double shape, object size, object lock, object out)
+
+cdef object double_fill_avx2_uniform_scaled(bitgen_t *state, double low, double range, object size, object lock, object out)
+cdef object double_fill_avx2_normal_scaled(bitgen_t *state, double loc, double scale, object size, object lock, object out)
+cdef object double_fill_avx2_exponential_scaled(bitgen_t *state, double scale, object size, object lock, object out)
+cdef object double_fill_avx2_gamma_scaled(bitgen_t *state, double shape, double scale, object size, object lock, object out)
+
+cdef object float_fill_avx2_uniform(bitgen_t *state, object size, object lock, object out)
+cdef object float_fill_avx2_normal(bitgen_t *state, object size, object lock, object out)
+cdef object float_fill_avx2_exponential(bitgen_t *state, object size, object lock, object out)
+cdef object float_fill_avx2_gamma(bitgen_t *state, float shape, object size, object lock, object out)
